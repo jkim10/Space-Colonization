@@ -39,6 +39,13 @@ sub (x1, y1) (x2, y2) =
     y = y1 - y2
   in (x, y)
 
+vdiv :: Point -> Float -> Point
+vdiv (x1, y1) a =
+  let
+    x = x1 / a
+    y = y1 / a
+  in (x, y)
+
 normalize :: Floating b => (b, b) -> (b, b)
 normalize (x,y) = let magnitude = sqrt ((x*x) + (y*y))
                   in
@@ -91,20 +98,27 @@ detectLeaves branch leaves max_dist = any f leaves
 closestBranch :: Foldable t => Leaf -> t Branch -> Float -> Float -> (Leaf, Branch)
 closestBranch (Leaf (x,y) _) branches min_dist max_dist = let closest = minimumBy f branches
                                                               dis = distance (position closest) (x,y)
-                                                              direction = sub (x,y) (position closest)
-                                                              normalized = normalize direction
+                                                              newDir = sub (x,y) (position closest)
+                                                              normalized = normalize newDir
                                                           in
                                                               if (dis > max_dist) then
                                                                 ((Leaf (x,y) False), Empty)
                                                               else
                                                                 if (dis <= min_dist) then
-                                                                  ((Leaf (x,y) True),Branch {position=(add (position closest) normalized), parent=closest, direction = normalized})
+                                                                  ((Leaf (x,y) True),Branch {position=(add (position closest) normalized), parent=closest, direction = add (direction closest) normalized})
                                                                 else
-                                                                  ((Leaf (x,y) False), Branch {position=(add (position closest) normalized), parent=closest, direction = normalized})
+                                                                  ((Leaf (x,y) False), Branch {position=(add (position closest) normalized), parent=closest, direction = add (direction closest) normalized})
                                                           where f a b = compare (distance (position a) (x,y)) (distance (position b) (x,y))
 
--- calculateNewBranches closests = let grouped = groupBy position closests
-      
+averageDir branches = let sum = foldl' (\acc b -> add acc (direction b)) (0,0) branches
+                      in
+                        (head branches) {direction = vdiv sum (fromIntegral (length branches))}
+
+calculateNewBranches :: [Branch] -> [Branch]
+calculateNewBranches branches = let grouped = groupBy branchPos branches
+                                in
+                                    map averageDir grouped
+                                where branchPos a b = ((position a) == (position b))
 
 step :: Tree -> Tree
 step tree = let parent = head (branches tree)
@@ -116,7 +130,8 @@ step tree = let parent = head (branches tree)
 grow :: Tree -> Tree
 grow tree = let unreached = filter (\(Leaf _ reached) -> not reached) (leaves tree)
                 (newLeaves,closests) = unzip ((parMap rseq (\x -> closestBranch x (branches tree) (min_dist tree) (max_dist tree)) unreached))
-                newBranches = filter notEmpty closests
+                filteredClosests = filter notEmpty closests
+                newBranches = calculateNewBranches filteredClosests
             in
                 case newBranches of
                   [] -> DONE
