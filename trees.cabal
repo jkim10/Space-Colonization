@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 47707e6df5871d372d627e5c90af7fa6e7afd29649f832c8ba7b6d03f92fd885
+-- hash: d2d14e7eb9d6eaf247d2f364f81cb42925b25514313bc8ff6ece98d29d0b0c98
 
 name:           trees
 version:        0.1.0.0
@@ -27,7 +27,7 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Render
       Tree
   other-modules:
       Paths_trees
@@ -35,6 +35,9 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , gloss
+    , parallel
+    , random
   default-language: Haskell2010
 
 executable trees-exe
@@ -43,9 +46,12 @@ executable trees-exe
       Paths_trees
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N -eventlog -Wall
   build-depends:
       base >=4.7 && <5
+    , gloss
+    , parallel
+    , random
     , trees
   default-language: Haskell2010
 
@@ -56,8 +62,11 @@ test-suite trees-test
       Paths_trees
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N1
   build-depends:
       base >=4.7 && <5
+    , gloss
+    , parallel
+    , random
     , trees
   default-language: Haskell2010
